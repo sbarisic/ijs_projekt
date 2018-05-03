@@ -147,7 +147,7 @@ global surface_heightmap_z;
 surface_heightmap_z = warp(draw_height, flip(imrotate(z_amp_texture, -90), 2));
 
 global surface_heightmap;
-%surface_heightmap = surface_heightmap_z;
+surface_heightmap = surface_heightmap_z;
 
 %surface_heightmap.FaceAlpha = 0.8;
 %surface_heightmap.FaceColor = 'g';
@@ -192,13 +192,9 @@ function [] = callback_SetTexturedHeightmap(varargin)
     global surface_heightmap_z;
     global surface_heightmap;
         
-    % Turn off all heightmaps
-    surface_heightmap_x.Visible = 'off';
-    surface_heightmap_y.Visible = 'off';
-    surface_heightmap_z.Visible = 'off';
+    surface_heightmap_x.Visible = 'f
     
-    % Turn on enabled one
-    clear surface_heightmap;
+
     surface_heightmap = textured_heightmap;
     surface_heightmap.Visible = 'on';
     surface_heightmap.FaceAlpha = 0.9;
