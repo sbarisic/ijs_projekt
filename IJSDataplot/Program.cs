@@ -7,6 +7,7 @@ using System.IO;
 using System.CodeDom.Compiler;
 using Microsoft.CSharp;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Glfw3;
 using OpenGL;
 using System.Diagnostics;
@@ -25,7 +26,7 @@ namespace IJSDataplot {
 			return Monitor;
 		}
 
-		static void CenterWindow(Glfw.Window Wnd) {
+		static Glfw.Window CenterWindow(Glfw.Window Wnd) {
 			GetDesktopResolution(out int W, out int H);
 			Glfw.GetWindowSize(Wnd, out int WW, out int WH);
 
@@ -33,6 +34,7 @@ namespace IJSDataplot {
 			int Y = H / 2 - WH / 2;
 
 			Glfw.SetWindowPos(Wnd, X, Y);
+			return Wnd;
 		}
 
 		static void Main(string[] args) {
@@ -46,8 +48,8 @@ namespace IJSDataplot {
 			Glfw.WindowHint(Glfw.Hint.ClientApi, Glfw.ClientApi.OpenGL);
 			Glfw.WindowHint(Glfw.Hint.ContextCreationApi, Glfw.ContextApi.Native);
 			Glfw.WindowHint(Glfw.Hint.Doublebuffer, true);
-			Glfw.WindowHint(Glfw.Hint.ContextVersionMajor, 4);
-			Glfw.WindowHint(Glfw.Hint.ContextVersionMinor, 0);
+			Glfw.WindowHint(Glfw.Hint.ContextVersionMajor, 3);
+			Glfw.WindowHint(Glfw.Hint.ContextVersionMinor, 2);
 
 			//Glfw.WindowHint(Glfw.Hint.Samples, 2);
 			Glfw.WindowHint(Glfw.Hint.OpenglForwardCompat, true);
@@ -59,21 +61,29 @@ namespace IJSDataplot {
 			const float WindowSizeScale = 0.9f;
 
 			GetDesktopResolution(out int W, out int H);
-			Window = Glfw.CreateWindow((int)(W * WindowSizeScale), (int)(H * WindowSizeScale), nameof(IJSDataplot));
-			CenterWindow(Window);
+			Window = CenterWindow(Glfw.CreateWindow((int)(W * WindowSizeScale), (int)(H * WindowSizeScale), nameof(IJSDataplot)));
 
 			Gl.Initialize();
 			Glfw.MakeContextCurrent(Window);
 
 #if DEBUG
-			Gl.DebugMessageCallback((Src, DbgType, ID, Severity, Len, Buffer, UserPtr) => {
-				if (Severity == Gl.DebugSeverity.Notification)
-					return;
+			try {
+				Gl.DebugMessageCallback((Src, DbgType, ID, Severity, Len, Buffer, UserPtr) => {
+					Utils.Log(Marshal.PtrToStringAnsi(Buffer, Len));
 
-				if ((/*Severity == Gl.DebugSeverity.Medium ||*/ Severity == Gl.DebugSeverity.High) && Debugger.IsAttached)
-					Debugger.Break();
-			}, IntPtr.Zero);
+					if (Severity == Gl.DebugSeverity.Notification)
+						return;
+
+					if ((/*Severity == Gl.DebugSeverity.Medium ||*/ Severity == Gl.DebugSeverity.High) && Debugger.IsAttached)
+						Debugger.Break();
+				}, IntPtr.Zero);
+			} catch (Exception) {
+
+			}
 #endif
+
+			string Msg = "Hello OpenGL World!";
+			Gl.DebugMessageInsert(Gl.DebugSource.DontCare, Gl.DebugType.DontCare, 0, Gl.DebugSeverity.Notification, Msg.Length, Msg);
 
 			while (!Glfw.WindowShouldClose(Window)) {
 				Glfw.PollEvents();
