@@ -1,6 +1,8 @@
 clear;
 clc;
 
+% https://stackoverflow.com/questions/29632430/quiver3-arrow-color-corresponding-to-magnitude
+
 % Force hardware OpenGL rendering?
 opengl hardware
 set(0, 'DefaultFigureRenderer', 'OpenGL');
@@ -17,13 +19,12 @@ z_amp_texture = imread(strcat(data_directory, '/z_amp.jpg'));
 image_ampl_x = rgb2gray(x_amp_texture);
 image_ampl_y = rgb2gray(y_amp_texture);
 image_ampl_z = rgb2gray(z_amp_texture);
-%ampl_y = imread('9ay.jpg');
 
 image_phase_x = rgb2gray(imread(strcat(data_directory, '/x_phase.jpg')));
 image_phase_y = rgb2gray(imread(strcat(data_directory, '/y_phase.jpg')));
 image_phase_z = rgb2gray(imread(strcat(data_directory, '/z_phase.jpg')));
 
-% Image sizing params
+% Image sizing parameters
 sample_count = 200;
 imageStartX = 150; % x offset
 imageEndX = 933;
@@ -37,7 +38,7 @@ if strcmp(data_directory, '../data2')
     imageEndY = 782;
 end
 
-% Drawing matrix
+% Drawing matrices, variables
 draw_height = zeros(sample_count, sample_count);
 draw_amp_x = zeros(sample_count, sample_count);
 draw_amp_y = zeros(sample_count, sample_count);
@@ -148,7 +149,7 @@ surface_heightmap_z = warp(draw_height, flip(imrotate(z_amp_texture, -90), 2));
 callback_SetNoTexturedHeightmap();
 callback_SetTexturedHeightmap(0, 0, surface_heightmap_z);
 
-% GUI
+% GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI
 createButton(F, 'Amp. Z', 1, {@callback_AmpZ});
 createButton(F, 'Amp. Z + Height', 2, {@callback_AmpZHeight});
 createButton(F, 'No Amp.', 3, {@callback_NoAmp});
