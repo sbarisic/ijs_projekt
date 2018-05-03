@@ -61,7 +61,6 @@ xy_scale = 10;
 for x = imageStartX : imageStepX : imageEndX
     imageCounterY=1;
  
-    
     for y = imageStartY : imageStepY : imageEndY
         newX = int32(x);
         newY = int32(y);
@@ -146,22 +145,19 @@ surface_heightmap_y = warp(draw_height, flip(imrotate(y_amp_texture, -90), 2));
 global surface_heightmap_z;
 surface_heightmap_z = warp(draw_height, flip(imrotate(z_amp_texture, -90), 2));
 
-global surface_heightmap;
-%surface_heightmap = surface_heightmap_z;
-
-%surface_heightmap.FaceAlpha = 0.8;
-%surface_heightmap.FaceColor = 'g';
+callback_SetNoTexturedHeightmap();
+callback_SetTexturedHeightmap(0, 0, surface_heightmap_z);
 
 % GUI
 createButton(F, 'Amp. Z', 1, {@callback_AmpZ});
 createButton(F, 'Amp. Z + Height', 2, {@callback_AmpZHeight});
 createButton(F, 'No Amp.', 3, {@callback_NoAmp});
-createButton(F, 'Toggle Height', 4, {@callback_ToggleVis, surface_heightmap});
-createButton(F, 'Toggle Vectors', 5, {@callback_ToggleVis, surface_vectors});
+createButton(F, 'Toggle Vectors', 4, {@callback_ToggleVis, surface_vectors});
 
-createButton(F, 'X amp', 7, {@callback_SetTexturedHeightmap, surface_heightmap_x});
-createButton(F, 'Y amp', 8, {@callback_SetTexturedHeightmap, surface_heightmap_y});
-createButton(F, 'Z amp', 9, {@callback_SetTexturedHeightmap, surface_heightmap_z});
+createButton(F, 'X amp overlay', 6, {@callback_SetTexturedHeightmap, surface_heightmap_x});
+createButton(F, 'Y amp overlay', 7, {@callback_SetTexturedHeightmap, surface_heightmap_y});
+createButton(F, 'Z amp overlay', 8, {@callback_SetTexturedHeightmap, surface_heightmap_z});
+createButton(F, 'No amp overlay', 9, {@callback_SetNoTexturedHeightmap});
 
 createButton(F, 'Summer', 11, {@callback_SetColormap, summer});
 createButton(F, 'Winter', 12, {@callback_SetColormap, winter});
@@ -186,23 +182,24 @@ end
 
 function [] = callback_SetTexturedHeightmap(varargin)
     textured_heightmap = varargin{3};
-
-    global surface_heightmap_x;
-    global surface_heightmap_y;
-    global surface_heightmap_z;
-    global surface_heightmap;
-        
-    % Turn off all heightmaps
-    surface_heightmap_x.Visible = 'off';
-    surface_heightmap_y.Visible = 'off';
-    surface_heightmap_z.Visible = 'off';
+    callback_SetNoTexturedHeightmap();
     
     % Turn on enabled one
-    clear surface_heightmap;
     surface_heightmap = textured_heightmap;
     surface_heightmap.Visible = 'on';
     surface_heightmap.FaceAlpha = 0.9;
     surface_heightmap.EdgeColor = 'none';
+end
+
+function [] = callback_SetNoTexturedHeightmap(varargin)
+    global surface_heightmap_x;
+    global surface_heightmap_y;
+    global surface_heightmap_z;
+    
+    % Turn off all heightmaps
+    surface_heightmap_x.Visible = 'off';
+    surface_heightmap_y.Visible = 'off';
+    surface_heightmap_z.Visible = 'off';
 end
 
 function [] = callback_AmpZ(varargin)
