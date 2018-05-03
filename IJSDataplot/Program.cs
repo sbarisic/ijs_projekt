@@ -65,7 +65,25 @@ namespace IJSDataplot {
 
 			Gl.Initialize();
 			Glfw.MakeContextCurrent(Window);
+			Init();
 
+			Stopwatch SWatch = Stopwatch.StartNew();
+			float Dt = 0;
+
+			while (!Glfw.WindowShouldClose(Window)) {
+				Glfw.PollEvents();
+				Update(Dt);
+
+				while (SWatch.ElapsedMilliseconds / 1000.0f < (1.0f / 60.0f))
+					;
+				Dt = SWatch.ElapsedMilliseconds / 1000.0f;
+				SWatch.Restart();
+			}
+
+			Environment.Exit(0);
+		}
+
+		static void Init() {
 #if DEBUG
 			try {
 				Gl.DebugMessageCallback((Src, DbgType, ID, Severity, Len, Buffer, UserPtr) => {
@@ -81,15 +99,16 @@ namespace IJSDataplot {
 
 			}
 #endif
+		}
 
-			string Msg = "Hello OpenGL World!";
-			Gl.DebugMessageInsert(Gl.DebugSource.DontCare, Gl.DebugType.DontCare, 0, Gl.DebugSeverity.Notification, Msg.Length, Msg);
+		static void Update(float Dt) {
+			if (Dt == 0)
+				return;
 
-			while (!Glfw.WindowShouldClose(Window)) {
-				Glfw.PollEvents();
-			}
+		}
 
-			Environment.Exit(0);
+		static void Draw() {
+
 		}
 	}
 }
