@@ -10,19 +10,19 @@ set(0, 'DefaultFigureRenderer', 'OpenGL');
 data_directory = '../data2';
 
 % Read images
-image_height = rgb2gray(imread(strcat(data_directory, '/heightmap.jpg')));
+image_height = rgb2gray(flip(imrotate(imread(strcat(data_directory, '/heightmap.jpg')), -90), 2));
 
-x_amp_texture = imread(strcat(data_directory, '/x_amp.jpg'));
-y_amp_texture = imread(strcat(data_directory, '/y_amp.jpg'));
-z_amp_texture = imread(strcat(data_directory, '/z_amp.jpg'));
+x_amp_texture = flip(imrotate(imread(strcat(data_directory, '/x_amp.jpg')), -90), 2);
+y_amp_texture = flip(imrotate(imread(strcat(data_directory, '/y_amp.jpg')), -90), 2);
+z_amp_texture = flip(imrotate(imread(strcat(data_directory, '/z_amp.jpg')), -90), 2);
 
 image_ampl_x = rgb2gray(x_amp_texture);
 image_ampl_y = rgb2gray(y_amp_texture);
 image_ampl_z = rgb2gray(z_amp_texture);
 
-image_phase_x = rgb2gray(imread(strcat(data_directory, '/x_phase.jpg')));
-image_phase_y = rgb2gray(imread(strcat(data_directory, '/y_phase.jpg')));
-image_phase_z = rgb2gray(imread(strcat(data_directory, '/z_phase.jpg')));
+image_phase_x = rgb2gray(flip(imrotate(imread(strcat(data_directory, '/x_phase.jpg')), -90), 2));
+image_phase_y = rgb2gray(flip(imrotate(imread(strcat(data_directory, '/y_phase.jpg')), -90), 2));
+image_phase_z = rgb2gray(flip(imrotate(imread(strcat(data_directory, '/z_phase.jpg')), -90), 2));
 
 % Image sizing parameters
 sample_count = 200;
@@ -78,7 +78,7 @@ for x = imageStartX : imageStepX : imageEndX
         draw_height(imageCounterX, imageCounterY) = height_val;
         
         % Amplitudes and stuff   
-        amp_x_val = func_readAmp(image_phase_x, image_ampl_x, newX, newY);
+        amp_x_val = func_readAmp2(image_phase_x, image_ampl_x, newX, newY);
         amp_y_val = func_readAmp(image_phase_y, image_ampl_y, newX, newY);
         amp_z_val = func_readAmp(image_phase_z, image_ampl_z, newX, newY);
 
@@ -88,9 +88,12 @@ for x = imageStartX : imageStepX : imageEndX
         
         % Vector fields
         if mod(imageCounterX, vector_frequency) == 0 && mod(imageCounterY, vector_frequency) == 0
-            draw_amp_vec_x(imageCounterX, imageCounterY) = amp_x_val * vector_scale * xy_scale;
-            draw_amp_vec_y(imageCounterX, imageCounterY) = amp_y_val * vector_scale * xy_scale;
-            draw_amp_vec_z(imageCounterX, imageCounterY) = amp_z_val * vector_scale;
+            if (amp_x_val == 0 || amp_y_val == 0)
+            else
+                draw_amp_vec_x(imageCounterX, imageCounterY) = amp_x_val * vector_scale * xy_scale;
+                draw_amp_vec_y(imageCounterX, imageCounterY) = amp_y_val * vector_scale * xy_scale;
+                draw_amp_vec_z(imageCounterX, imageCounterY) = amp_z_val * vector_scale;
+            end
         end
         
         % Amp + offset
@@ -113,6 +116,8 @@ daspect([1 1 0.1]);
 callback_SetColormap(0, 0, summer);
 hold on;
 camproj('perspective');
+xlabel('X Axis');
+ylabel('Y Axis');
 
 global surface_amp_z;
 surface_amp_z = surf(draw_amp_x);
@@ -132,7 +137,7 @@ global surface_vectors;
 surface_vectors = quiver3(draw_height, draw_amp_vec_x, draw_amp_vec_y, draw_amp_vec_z);
 surface_vectors.Color = 'r';
 surface_vectors.LineWidth = 1;
-surface_vectors.ShowArrowHead = 'off';
+surface_vectors.ShowArrowHead = 'on';
 surface_vectors.AutoScale = 'off';
 
 % X, Y, Z amplitude textures on the heightmap as separate surfaces.
@@ -176,6 +181,17 @@ function [amp] = func_readAmp(image_phase, image_amp, x, y)
     amp = amp_val;
 end
 
+function [amp] = func_readAmp2(image_phase, image_amp, x, y)
+    phase_val = double(image_phase(y, x)) / 255;
+    amp_val = double(image_amp(y, x)) / 255;
+    
+    if phase_val < 0.5
+        amp_val = -amp_val;
+    end
+    
+    amp = amp_val;
+end
+
 function [] = func_OGL(fig)
     set(fig, 'Renderer', 'OpenGL');
     set(fig, 'RendererMode', 'manual');
@@ -188,7 +204,7 @@ function [] = callback_SetTexturedHeightmap(varargin)
     % Turn on enabled one
     surface_heightmap = textured_heightmap;
     surface_heightmap.Visible = 'on';
-    surface_heightmap.FaceAlpha = 0.9;
+    surface_heightmap.FaceAlpha = 1.0;
     surface_heightmap.EdgeColor = 'none';
 end
 
