@@ -14,6 +14,16 @@ namespace IJSDataplot {
 		static RenderWindow RWind;
 
 		static void Main(string[] args) {
+
+
+			IBWLoader.Load("dataset/ibw/Image0018.ibw");
+			Console.WriteLine("Done!");
+			Console.ReadLine();
+			return;
+
+
+
+
 			const float Scale = 0.9f;
 
 			RenderAPI.GetDesktopResolution(out int W, out int H);
@@ -29,7 +39,7 @@ namespace IJSDataplot {
 
 			while (!RWind.ShouldClose) {
 				Gfx.Clear();
-				
+
 
 				RWind.SwapBuffers();
 				Events.Poll();
