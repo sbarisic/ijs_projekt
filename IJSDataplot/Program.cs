@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using System.Drawing;
 using System.IO;
+using System.Diagnostics;
 
 using FishGfx;
 using FishGfx.Graphics;
@@ -15,6 +16,9 @@ using FishGfx.System;
 namespace IJSDataplot {
 	class Program {
 		static RenderWindow RWind;
+		static ShaderProgram Shader;
+
+		static bool MoveFd, MoveBk, MoveLt, MoveRt, MoveUp, MoveDn;
 
 		static void Main(string[] args) {
 			/*IBWFile F = IBWLoader.Load("dataset/ibw/Image0018.ibw");
@@ -71,15 +75,15 @@ namespace IJSDataplot {
 			RenderAPI.GetDesktopResolution(out int W, out int H);
 			RWind = new RenderWindow((int)(W * Scale), (int)(H * Scale), "Vector PFM");
 
-			ShaderProgram Default = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
+			Shader = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
 				new ShaderStage(ShaderType.FragmentShader, "data/default.frag"));
 
-			Vector2 Viewport = RWind.GetWindowSizeVec();
-			Default.Uniforms.Viewport = Viewport;
-			//Default.Uniforms.Project = Matrix4x4.CreateOrthographicOffCenter(0, Viewport.X, 0, Viewport.Y, -10, 10);
-			Default.Uniforms.Project = Matrix4x4.CreatePerspectiveFieldOfView((float)Math.PI / 2, Viewport.X / Viewport.Y, 0.1f, 100);
-			Default.Uniforms.View = Matrix4x4.CreateTranslation(new Vector3(0, 0, -10));
+			Shader.Uniforms.Camera.SetPerspective(RWind.GetWindowSizeVec());
+			Shader.Uniforms.Camera.Position = new Vector3(0, 0, 100);
+			Shader.Uniforms.Camera.MouseMovement = true;
 
+			RWind.OnMouseMoveDelta += (Wnd, X, Y) => Shader.Uniforms.Camera.Update(new Vector2(-X, -Y));
+			RWind.OnKey += OnKey;
 
 			Mesh3D TestMesh = new Mesh3D();
 			TestMesh.PrimitiveType = PrimitiveType.Triangles;
@@ -89,19 +93,74 @@ namespace IJSDataplot {
 				-1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f,-1.0f,  1.0f,-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f,
 				-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f,-1.0f, 1.0f, -1.0f, -1.0f, 1.0f,
 				1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f,
-				1.0f,  1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f }));
+				1.0f,  1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f }.Multiply(5)));
 
+			Stopwatch SWatch = Stopwatch.StartNew();
+			float Dt = 0;
 
 			while (!RWind.ShouldClose) {
 				Gfx.Clear();
 
-				Default.Bind();
+				Update(Dt);
+
+				Shader.Bind();
 				TestMesh.Draw();
-				Default.Unbind();
+				Shader.Unbind();
 
 				RWind.SwapBuffers();
 				Events.Poll();
+
+				while (SWatch.ElapsedMilliseconds / 1000.0f < 1.0f / 60.0f)
+					;
+				Dt = SWatch.ElapsedMilliseconds / 1000.0f;
+				SWatch.Restart();
 			}
+		}
+
+		static void Update(float Dt) {
+			if (Dt == 0)
+				return;
+
+			Camera Cam = Shader.Uniforms.Camera;
+			const float MoveSpeed = 100.0f;
+
+			if (MoveFd)
+				Cam.Position += Cam.WorldForwardNormal * MoveSpeed * Dt;
+
+			if (MoveBk)
+				Cam.Position -= Cam.WorldForwardNormal * MoveSpeed * Dt;
+
+			if (MoveLt)
+				Cam.Position -= Cam.WorldRightNormal * MoveSpeed * Dt;
+
+			if (MoveRt)
+				Cam.Position += Cam.WorldRightNormal * MoveSpeed * Dt;
+
+			if (MoveUp)
+				Cam.Position += Cam.WorldUpNormal * MoveSpeed * Dt;
+
+			if (MoveDn)
+				Cam.Position -= Cam.WorldUpNormal * MoveSpeed * Dt;
+		}
+
+		static void OnKey(RenderWindow Wnd, Key Key, int Scancode, bool Pressed, bool Repeat, KeyMods Mods) {
+			if (Key == Key.W)
+				MoveFd = Pressed;
+
+			if (Key == Key.A)
+				MoveLt = Pressed;
+
+			if (Key == Key.S)
+				MoveBk = Pressed;
+
+			if (Key == Key.D)
+				MoveRt = Pressed;
+
+			if (Key == Key.Space)
+				MoveUp = Pressed;
+
+			if (Key == Key.C)
+				MoveDn = Pressed;
 		}
 	}
 }
