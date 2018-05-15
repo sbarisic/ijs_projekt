@@ -85,15 +85,9 @@ namespace IJSDataplot {
 			RWind.OnMouseMoveDelta += (Wnd, X, Y) => Shader.Uniforms.Camera.Update(new Vector2(-X, -Y));
 			RWind.OnKey += OnKey;
 
-			Mesh3D TestMesh = new Mesh3D();
-			TestMesh.PrimitiveType = PrimitiveType.Triangles;
+			Terrain HeightmapThing = new Terrain();
+			HeightmapThing.LoadFromImage(Image.FromFile("dataset/heightmap.png"), 100);
 
-			TestMesh.SetVertices(Vertex3.FromFloatArray(new float[] { -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f,
-				-1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f,
-				-1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f,-1.0f,  1.0f,-1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f,
-				-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, 1.0f,-1.0f, 1.0f, -1.0f, -1.0f, 1.0f,
-				1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f,
-				1.0f,  1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f }.Multiply(5)));
 
 			Stopwatch SWatch = Stopwatch.StartNew();
 			float Dt = 0;
@@ -104,7 +98,8 @@ namespace IJSDataplot {
 				Update(Dt);
 
 				Shader.Bind();
-				TestMesh.Draw();
+				//TestMesh.Draw();
+				HeightmapThing.Draw();
 				Shader.Unbind();
 
 				RWind.SwapBuffers();
