@@ -16,9 +16,14 @@ using FishGfx.System;
 namespace IJSDataplot {
 	class Program {
 		static RenderWindow RWind;
-		static ShaderProgram Shader;
+		static ShaderProgram DrawShader;
+		static ShaderProgram ScreenShader;
+		static FishGfx.Color ClearColor;
 
-		static bool MoveFd, MoveBk, MoveLt, MoveRt, MoveUp, MoveDn;
+		static bool MoveFd, MoveBk, MoveLt, MoveRt, MoveUp, MoveDn, LeftMouse, RightMouse;
+
+		static Terrain HMap;
+		static Texture RayCastingTexture;
 
 		static void Main(string[] args) {
 			/*IBWFile F = IBWLoader.Load("dataset/ibw/Image0018.ibw");
@@ -71,37 +76,72 @@ namespace IJSDataplot {
 
 
 			const float Scale = 0.9f;
+			ClearColor = new FishGfx.Color(60, 80, 100);
 
 			RenderAPI.GetDesktopResolution(out int W, out int H);
 			RWind = new RenderWindow((int)(W * Scale), (int)(H * Scale), "Vector PFM");
 
-			Shader = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
+			// Load shader programs
+			DrawShader = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
+				new ShaderStage(ShaderType.FragmentShader, "data/defaultRayCast.frag"));
+
+			DrawShader.Uniforms.Camera.SetPerspective(RWind.GetWindowSizeVec());
+			DrawShader.Uniforms.Camera.Position = new Vector3(0, 0, 100);
+			DrawShader.Uniforms.Camera.MouseMovement = true;
+
+			ScreenShader = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default.vert"),
 				new ShaderStage(ShaderType.FragmentShader, "data/default.frag"));
 
-			Shader.Uniforms.Camera.SetPerspective(RWind.GetWindowSizeVec());
-			Shader.Uniforms.Camera.Position = new Vector3(0, 0, 100);
-			Shader.Uniforms.Camera.MouseMovement = true;
+			ScreenShader.Uniforms.Camera.SetOrthogonal(0, 0, 1, 1);
 
-			RWind.OnMouseMoveDelta += (Wnd, X, Y) => Shader.Uniforms.Camera.Update(new Vector2(-X, -Y));
+			RWind.OnMouseMoveDelta += (Wnd, X, Y) => DrawShader.Uniforms.Camera.Update(new Vector2(-X, -Y));
 			RWind.OnKey += OnKey;
 
-			Terrain HeightmapThing = new Terrain();
-			HeightmapThing.LoadFromImage(Image.FromFile("dataset/heightmap.png"), 100);
+			HMap = new Terrain();
+			HMap.LoadFromImage(Image.FromFile("dataset/data2/heightmap.png"), 100, true);
 
+			/*HeightmapThing.OverlayTexture = Texture.FromImage(Image.FromFile("dataset/data2/x_amp.png"));
+			HeightmapThing.OverlayTexture.SetFilterSmooth();*/
+
+
+			RWind.GetWindowSize(out int WindowWidth, out int WindowHeight);
+			RenderTexture Screen = new RenderTexture(WindowWidth, WindowHeight);
+			RayCastingTexture = Screen.CreateNewColorAttachment(1);
+			Screen.Framebuffer.DrawBuffers(0, 1);
+
+			Mesh2D ScreenQuad = new Mesh2D();
+			ScreenQuad.SetVertices(new Vertex2[] {
+				new Vertex2(new Vector2(0, 0), new Vector2(0, 0)),
+				new Vertex2(new Vector2(0, 1), new Vector2(0, 1)),
+				new Vertex2(new Vector2(1, 1), new Vector2(1, 1)),
+				new Vertex2(new Vector2(1, 0), new Vector2(1, 0))
+			});
+			ScreenQuad.SetElements(new uint[] { 0, 1, 2, 0, 2, 3 }.Reverse().ToArray());
 
 			Stopwatch SWatch = Stopwatch.StartNew();
 			float Dt = 0;
 
 			while (!RWind.ShouldClose) {
-				Gfx.Clear();
-
 				Update(Dt);
 
-				Shader.Bind();
-				//TestMesh.Draw();
-				HeightmapThing.Draw();
-				Shader.Unbind();
+				// Draw the world onto a render texture
+				Screen.Bind();
+				{
+					Gfx.Clear(FishGfx.Color.Transparent);
+					DrawShader.Bind();
+					HMap.Draw();
+					DrawShader.Unbind();
+				}
+				Screen.Unbind();
 
+				// Draw render texture to screen
+				ScreenShader.Bind();
+				Gfx.Clear(ClearColor);
+				Screen.Color.BindTextureUnit();
+				ScreenQuad.Draw();
+				ScreenShader.Unbind();
+
+				// Swap buffers, do magic
 				RWind.SwapBuffers();
 				Events.Poll();
 
@@ -116,7 +156,8 @@ namespace IJSDataplot {
 			if (Dt == 0)
 				return;
 
-			Camera Cam = Shader.Uniforms.Camera;
+			Camera Cam = DrawShader.Uniforms.Camera;
+			Cam.MouseMovement = LeftMouse;
 			const float MoveSpeed = 100.0f;
 
 			if (MoveFd)
@@ -156,6 +197,28 @@ namespace IJSDataplot {
 
 			if (Key == Key.C)
 				MoveDn = Pressed;
+
+			if (Key == Key.MouseLeft)
+				LeftMouse = Pressed;
+
+			if (Key == Key.MouseRight)
+				RightMouse = Pressed;
+
+			if (Key == Key.MouseMiddle && Pressed) {
+				Wnd.ReadPixels();
+				//FishGfx.Color C = Wnd.GetPixel(Wnd.MouseX, Wnd.MouseY);
+				//FishGfx.Color[] Colors = RayCastingTexture.GetPixels();
+				FishGfx.Color C = RayCastingTexture.GetPixel(Wnd.MouseX, Wnd.MouseY);
+				if (C.A != 0) {
+					C.A = 0;
+					int Idx = C.ColorInt;
+
+					int X = Idx % HMap.Width;
+					int Y = Idx / HMap.Width;
+
+					Console.WriteLine("{0}, {1} - {2}, {3}", X, Y, Idx, C);
+				}
+			}
 		}
 	}
 }
