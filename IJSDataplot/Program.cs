@@ -93,8 +93,10 @@ namespace IJSDataplot {
 				new ShaderStage(ShaderType.FragmentShader, "data/defaultRayCast.frag"));
 
 			Shader_DrawRayCast.Uniforms.Camera.SetPerspective(RWind.GetWindowSizeVec());
-			Shader_DrawRayCast.Uniforms.Camera.Position = new Vector3(0, 0, 100);
+			Shader_DrawRayCast.Uniforms.Camera.Position = new Vector3(0, 300, 0);
 			Shader_DrawRayCast.Uniforms.Camera.MouseMovement = true;
+
+			Shader_DrawRayCast.Uniforms.Camera.LookAt(new Vector3(200, 0, 200));
 
 			Shader_DrawFlat = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
 				new ShaderStage(ShaderType.FragmentShader, "data/defaultFlatColor.frag"));
@@ -109,11 +111,11 @@ namespace IJSDataplot {
 			RWind.OnKey += OnKey;
 
 			HMap = new Terrain();
-			//HMap.LoadFromImage(Image.FromFile("dataset/data2/heightmap.png"), 100, true);
+			HMap.LoadFromImage(Image.FromFile("dataset/data2/heightmap.png"), 100);
 			//HMap.LoadFromImage(Image.FromFile("dataset/height_test.png"), 10);
-			HMap.LoadFromImage(Image.FromFile("dataset/owl.png"), 100);
+			//HMap.LoadFromImage(Image.FromFile("dataset/owl.png"), 100);
 
-			int VectorStride = 5;
+			/*int VectorStride = 5;
 			Mesh3D Vectors = new Mesh3D();
 			Vectors.PrimitiveType = PrimitiveType.Lines;
 			Vertex3[] Verts = new Vertex3[(HMap.Width * HMap.Height * 2) / VectorStride];
@@ -126,11 +128,7 @@ namespace IJSDataplot {
 				Verts[i] = new Vertex3(new Vector3(X, Height, Y), FishGfx.Color.White);
 				Verts[i + 1] = new Vertex3(new Vector3(X, Height + 20, Y), FishGfx.Color.Red);
 			}
-			Vectors.SetVertices(Verts);
-
-			/*HeightmapThing.OverlayTexture = Texture.FromImage(Image.FromFile("dataset/data2/x_amp.png"));
-			HeightmapThing.OverlayTexture.SetFilterSmooth();*/
-
+			Vectors.SetVertices(Verts);*/
 
 			RWind.GetWindowSize(out int WindowWidth, out int WindowHeight);
 			RenderTexture Screen = new RenderTexture(WindowWidth, WindowHeight);
@@ -165,7 +163,7 @@ namespace IJSDataplot {
 				Screen.Bind(0);
 				{
 					Shader_DrawFlat.Bind();
-					Vectors.Draw();
+					//Vectors.Draw();
 					Shader_DrawFlat.Unbind();
 				}
 				Screen.Unbind();
@@ -223,6 +221,13 @@ namespace IJSDataplot {
 		}
 
 		static void OnKey(RenderWindow Wnd, Key Key, int Scancode, bool Pressed, bool Repeat, KeyMods Mods) {
+			if (Key == Key.M && Pressed) {
+				Camera Cam = Shader_DrawRayCast.Uniforms.Camera;
+
+				Console.WriteLine("Pos: {0}", Cam.Position);
+				Console.WriteLine("Rot: {0}", Cam.Rotation);
+			}
+
 			if (Key == Key.W)
 				MoveFd = Pressed;
 
@@ -252,6 +257,24 @@ namespace IJSDataplot {
 
 			if (Key == Key.F2 && Pressed)
 				FunctionMode = 2;
+
+			{
+				const float MoveSpeed = 1.0f;
+
+				bool OldMouseMov = Shader_DrawRayCast.Uniforms.Camera.MouseMovement;
+				Shader_DrawRayCast.Uniforms.Camera.MouseMovement = true;
+
+				if (Key == Key.Left && Pressed)
+					Shader_DrawRayCast.Uniforms.Camera.Update(new Vector2(-MoveSpeed, 0));
+				if (Key == Key.Right && Pressed)
+					Shader_DrawRayCast.Uniforms.Camera.Update(new Vector2(MoveSpeed, 0));
+				if (Key == Key.Up && Pressed)
+					Shader_DrawRayCast.Uniforms.Camera.Update(new Vector2(0, -MoveSpeed));
+				if (Key == Key.Down && Pressed)
+					Shader_DrawRayCast.Uniforms.Camera.Update(new Vector2(0, MoveSpeed));
+
+				Shader_DrawRayCast.Uniforms.Camera.MouseMovement = OldMouseMov;
+			}
 
 			if (Key == Key.MouseMiddle && Pressed) {
 				Wnd.ReadPixels();
