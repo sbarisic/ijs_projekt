@@ -23,11 +23,16 @@ namespace IJSDataplot {
 
 		static FishGfx.Color ClearColor;
 
+		static Vector2 RightClickPos;
 		static bool MoveFd, MoveBk, MoveLt, MoveRt, MoveUp, MoveDn, LeftMouse, RightMouse;
 		static int FunctionMode = 1;
 
 		static Terrain HMap;
 		static Texture RayCastingTexture;
+		static Texture Background;
+
+		static Vector3 CameraPivot;
+		static float DesiredPivotDistance;
 
 		static void Main(string[] args) {
 			/*IBWFile F = IBWLoader.Load("dataset/ibw/Image0018.ibw");
@@ -55,7 +60,7 @@ namespace IJSDataplot {
 
 				Min = float.MaxValue;
 				Max = float.MinValue;
-				
+
 				for (int y = 0; y < F.Height; y++) {
 					for (int x = 0; x < F.Width; x++) {
 						float Flt = ((float)F.GetData(x, y, D_Dim) * 1000000000 + Offset) * ScaleVal;
@@ -95,8 +100,11 @@ namespace IJSDataplot {
 			Shader_DrawRayCast.Uniforms.Camera.SetPerspective(RWind.GetWindowSizeVec());
 			Shader_DrawRayCast.Uniforms.Camera.Position = new Vector3(0, 300, 0);
 			Shader_DrawRayCast.Uniforms.Camera.MouseMovement = true;
+			Shader_DrawRayCast.Uniforms.Camera.PitchClamp = new Vector2(-80, 80);
 
-			Shader_DrawRayCast.Uniforms.Camera.LookAt(new Vector3(200, 0, 200));
+			DesiredPivotDistance = 400;
+			CameraPivot = new Vector3(200, 0, 200);
+			Shader_DrawRayCast.Uniforms.Camera.LookAt(CameraPivot);
 
 			Shader_DrawFlat = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
 				new ShaderStage(ShaderType.FragmentShader, "data/defaultFlatColor.frag"));
@@ -110,29 +118,58 @@ namespace IJSDataplot {
 			RWind.OnMouseMoveDelta += (Wnd, X, Y) => Shader_DrawRayCast.Uniforms.Camera.Update(new Vector2(-X, -Y));
 			RWind.OnKey += OnKey;
 
+			RWind.OnMouseMoveDelta += (Wnd, X, Y) => {
+				Camera Cam = Shader_DrawRayCast.Uniforms.Camera;
+
+				if (LeftMouse) {
+					const float MoveSpeed = 1.0f;
+
+					if (X != 0)
+						Cam.Position -= Cam.WorldRightNormal * MoveSpeed * -X;
+
+					if (Y != 0)
+						Cam.Position += Cam.WorldUpNormal * MoveSpeed * -Y;
+				} else if (RightMouse) {
+					DesiredPivotDistance = (DesiredPivotDistance += Y).Clamp(200, 1000);
+				}
+
+				Vector3 CamNormal = Vector3.Normalize(Cam.Position - CameraPivot);
+				Cam.Position = CameraPivot + CamNormal * DesiredPivotDistance;
+				Cam.LookAt(CameraPivot);
+			};
+
 			HMap = new Terrain();
 			HMap.LoadFromImage(Image.FromFile("dataset/data2/heightmap.png"), 100);
 			//HMap.LoadFromImage(Image.FromFile("dataset/height_test.png"), 10);
 			//HMap.LoadFromImage(Image.FromFile("dataset/owl.png"), 100);
 
-			/*int VectorStride = 5;
 			Mesh3D Vectors = new Mesh3D();
 			Vectors.PrimitiveType = PrimitiveType.Lines;
-			Vertex3[] Verts = new Vertex3[(HMap.Width * HMap.Height * 2) / VectorStride];
-			for (int i = 0; i < Verts.Length; i += 2) {
-				int X = ((i / 2) % (HMap.Width / VectorStride)) * VectorStride;
-				int Y = (i / 2) / HMap.Width * VectorStride;
+			{
+				//Vertex3[] Verts = new Vertex3[HMap.Width * HMap.Height * 2];
+				List<Vertex3> Verts = new List<Vertex3>();
 
-				float Height = HMap.GetHeight(X, Y);
+				for (int i = 0; i < HMap.Width * HMap.Height * 2; i += 2) {
+					int X = (i / 2) % HMap.Width;
+					int Y = (i / 2) / HMap.Width;
 
-				Verts[i] = new Vertex3(new Vector3(X, Height, Y), FishGfx.Color.White);
-				Verts[i + 1] = new Vertex3(new Vector3(X, Height + 20, Y), FishGfx.Color.Red);
+					if (X % 10 != 0 || Y % 10 != 0)
+						continue;
+
+					float Height = HMap.GetHeight(X, Y);
+
+					Verts.Add(new Vertex3(new Vector3(X, Height - 0.5f, Y), FishGfx.Color.Black));
+					Verts.Add(new Vertex3(new Vector3(X, Height + 20, Y), FishGfx.Color.White));
+				}
+
+				Vectors.SetVertices(Verts.ToArray());
 			}
-			Vectors.SetVertices(Verts);*/
 
 			RWind.GetWindowSize(out int WindowWidth, out int WindowHeight);
 			RenderTexture Screen = new RenderTexture(WindowWidth, WindowHeight);
 			RayCastingTexture = Screen.CreateNewColorAttachment(1);
+
+			Background = Texture.FromFile("data/background.png");
 
 			Mesh2D ScreenQuad = new Mesh2D();
 			ScreenQuad.SetVertices(new Vertex2[] {
@@ -154,7 +191,22 @@ namespace IJSDataplot {
 				{
 					Shader_DrawRayCast.Bind();
 					Gfx.Clear(FishGfx.Color.Transparent);
+
+					/*Gfx.EnableCullFace(false);
 					HMap.Draw();
+					Gfx.EnableCullFace(true);*/
+
+					// Draw back face
+					Gfx.CullFront();
+					Texture Orig = HMap.OverlayTexture;
+					HMap.OverlayTexture = Background;
+					HMap.Draw();
+
+					// Draw front face
+					Gfx.CullBack();
+					HMap.OverlayTexture = Orig;
+					HMap.Draw();
+
 					Shader_DrawRayCast.Unbind();
 				}
 				Screen.Unbind();
@@ -163,7 +215,7 @@ namespace IJSDataplot {
 				Screen.Bind(0);
 				{
 					Shader_DrawFlat.Bind();
-					//Vectors.Draw();
+					Vectors.Draw();
 					Shader_DrawFlat.Unbind();
 				}
 				Screen.Unbind();
@@ -197,27 +249,6 @@ namespace IJSDataplot {
 			if (Dt == 0)
 				return;
 
-			Camera Cam = Shader_DrawRayCast.Uniforms.Camera;
-			Cam.MouseMovement = LeftMouse;
-			const float MoveSpeed = 100.0f;
-
-			if (MoveFd)
-				Cam.Position += Cam.WorldForwardNormal * MoveSpeed * Dt;
-
-			if (MoveBk)
-				Cam.Position -= Cam.WorldForwardNormal * MoveSpeed * Dt;
-
-			if (MoveLt)
-				Cam.Position -= Cam.WorldRightNormal * MoveSpeed * Dt;
-
-			if (MoveRt)
-				Cam.Position += Cam.WorldRightNormal * MoveSpeed * Dt;
-
-			if (MoveUp)
-				Cam.Position += Cam.WorldUpNormal * MoveSpeed * Dt;
-
-			if (MoveDn)
-				Cam.Position -= Cam.WorldUpNormal * MoveSpeed * Dt;
 		}
 
 		static void OnKey(RenderWindow Wnd, Key Key, int Scancode, bool Pressed, bool Repeat, KeyMods Mods) {
@@ -249,8 +280,14 @@ namespace IJSDataplot {
 			if (Key == Key.MouseLeft)
 				LeftMouse = Pressed;
 
-			if (Key == Key.MouseRight)
+			// Distance from pivot point
+			if (Key == Key.MouseRight) {
 				RightMouse = Pressed;
+
+				if (Pressed) {
+					RightClickPos = Wnd.MousePos;
+				}
+			}
 
 			if (Key == Key.F1 && Pressed)
 				FunctionMode = 1;
