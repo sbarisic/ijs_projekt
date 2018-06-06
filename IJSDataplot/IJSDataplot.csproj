@@ -80,6 +80,10 @@
       <Project>{9d55cabd-ba2d-4fb2-8156-82cea30b15b9}</Project>
       <Name>FishGfx</Name>
     </ProjectReference>
+    <ProjectReference Include="..\NuklearDotNet\NuklearDotNet\NuklearDotNet.csproj">
+      <Project>{bdb132a4-22a1-479d-a4d0-0a2b00021f16}</Project>
+      <Name>NuklearDotNet</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="dataset\data2\heightmap.png">
