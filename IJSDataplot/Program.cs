@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Drawing;
 using System.IO;
 using System.Diagnostics;
+using NuklearDotNet;
 
 using FishGfx;
 using FishGfx.Graphics;
@@ -37,6 +38,8 @@ namespace IJSDataplot {
 		static float DesiredPivotDistance;
 
 		static Mesh3D PinMesh;
+
+		static OpenGLDevice NuklearDev;
 
 		static void Main(string[] args) {
 			/*IBWFile F = IBWLoader.Load("dataset/ibw/Image0018.ibw");
@@ -96,6 +99,9 @@ namespace IJSDataplot {
 
 			Console.WriteLine("OpenGL {0}", RenderAPI.Version);
 			Console.WriteLine("Running on {0}", RenderAPI.Renderer);
+
+			NuklearDev = new OpenGLDevice();
+			NuklearAPI.Init(NuklearDev);
 
 			// Load shader programs
 			Shader_DrawRayCast = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
@@ -270,6 +276,8 @@ namespace IJSDataplot {
 		static void Update(float Dt) {
 			if (Dt == 0)
 				return;
+
+			NuklearAPI.SetDeltaTime(Dt);
 		}
 
 		static void RecalcCamera() {
