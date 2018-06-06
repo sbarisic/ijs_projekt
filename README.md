@@ -4,16 +4,17 @@
 
 ### TO-DO
 
-- [ ] 3D Features
-	- [x] Creating mesh based on HeightMap
-	
+- [x] Creating mesh based on HeightMap
 - [ ] Scaling in X and Y dimensions, getting micrometers?
+- [ ] Coloring the mesh based on amplitudes
 
-- [ ] Extract images from raw data
+- [ ] Vector picking with the mouse
+	- [ ] Angle and length of selected vector
+
+- [ ] Image manipulation
 	- [ ] Input image - get raw data without scale
 	- [x] Extract images from the scanner file
-	
-- [ ] Automatically align X and Y images
+	- [ ] Automatically align X and Y images
 
 - [ ] GUI
 	- [ ] Checkbox to invert the phase
