@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Drawing;
 using System.IO;
 using System.Diagnostics;
-using NuklearDotNet;
+//using NuklearDotNet;
 
 using FishGfx;
 using FishGfx.Graphics;
@@ -39,7 +39,7 @@ namespace IJSDataplot {
 
 		static Mesh3D PinMesh;
 
-		static OpenGLDevice NuklearDev;
+		//static OpenGLDevice NuklearDev;
 
 		static void Main(string[] args) {
 			/*IBWFile F = IBWLoader.Load("dataset/ibw/Image0018.ibw");
@@ -100,9 +100,6 @@ namespace IJSDataplot {
 			Console.WriteLine("OpenGL {0}", RenderAPI.Version);
 			Console.WriteLine("Running on {0}", RenderAPI.Renderer);
 
-			NuklearDev = new OpenGLDevice();
-			NuklearAPI.Init(NuklearDev);
-
 			// Load shader programs
 			Shader_DrawRayCast = new ShaderProgram(new ShaderStage(ShaderType.VertexShader, "data/default3d.vert"),
 				new ShaderStage(ShaderType.FragmentShader, "data/defaultRayCast.frag"));
@@ -122,8 +119,12 @@ namespace IJSDataplot {
 				new ShaderStage(ShaderType.FragmentShader, "data/default.frag"));
 			Shader_Textured.Uniforms.Camera = Shader_DrawRayCast.Uniforms.Camera;
 
+			//NuklearDev = new OpenGLDevice(RWind.GetWindowSizeVec());
+			//NuklearAPI.Init(NuklearDev);
+
 			RWind.OnMouseMoveDelta += (Wnd, X, Y) => Shader_DrawRayCast.Uniforms.Camera.Update(new Vector2(-X, -Y));
 			RWind.OnKey += OnKey;
+			//RWind.OnMouseMove += (Wnd, X, Y) => NuklearDev.OnMouseMove((int)X, (int)Y);
 
 			RWind.OnMouseMoveDelta += (Wnd, X, Y) => {
 				if (LeftMouse) {
@@ -174,7 +175,8 @@ namespace IJSDataplot {
 					int X = (i / 2) % HMap.Width;
 					int Y = (i / 2) / HMap.Width;
 
-					if (X % 10 != 0 || Y % 10 != 0)
+					const int Density = 2;
+					if (X % Density != 0 || Y % Density != 0)
 						continue;
 
 					float Height = HMap.GetHeight(X, Y);
@@ -248,18 +250,21 @@ namespace IJSDataplot {
 				}
 				Screen.Unbind();
 
-
-
-				// Draw render texture to screen
+				// Draw render texture and GUI to screen
 				Shader_Screen.Bind();
-				Gfx.Clear(ClearColor);
+				{
+					Gfx.Clear(ClearColor);
+					Gfx.EnableDepthDest(false);
 
-				if (FunctionMode == 1)
-					Screen.Color.BindTextureUnit();
-				else if (FunctionMode == 2)
-					RayCastingTexture.BindTextureUnit();
+					if (FunctionMode == 1)
+						Screen.Color.BindTextureUnit();
+					else if (FunctionMode == 2)
+						RayCastingTexture.BindTextureUnit();
 
-				ScreenQuad.Draw();
+					ScreenQuad.Draw();
+					//NuklearAPI.Frame(DrawGUI);
+					Gfx.EnableDepthDest(true);
+				}
 				Shader_Screen.Unbind();
 
 				// Swap buffers, do magic
@@ -277,7 +282,22 @@ namespace IJSDataplot {
 			if (Dt == 0)
 				return;
 
-			NuklearAPI.SetDeltaTime(Dt);
+			//NuklearAPI.SetDeltaTime(Dt);
+		}
+
+		static void DrawGUI() {
+			//NkPanelFlags Flags = NkPanelFlags.BorderTitle | NkPanelFlags.MovableScalable | NkPanelFlags.Minimizable | NkPanelFlags.ScrollAutoHide;
+			/*NkPanelFlags Flags = NkPanelFlags.BorderTitle | NkPanelFlags.Minimizable;
+
+			NuklearAPI.Window("Hello World!", 100, 100, 200, 200, Flags, () => {
+				NuklearAPI.LayoutRowDynamic(35);
+
+				for (int i = 0; i < 10; i++) {
+					if (NuklearAPI.ButtonLabel("Hello Button!")) {
+						Console.WriteLine("Buttone!");
+					}
+				}
+			});*/
 		}
 
 		static void RecalcCamera() {
@@ -290,6 +310,13 @@ namespace IJSDataplot {
 		}
 
 		static void OnKey(RenderWindow Wnd, Key Key, int Scancode, bool Pressed, bool Repeat, KeyMods Mods) {
+			/*if (Key == Key.MouseLeft)
+				NuklearDev.OnMouseButton(NuklearEvent.MouseButton.Left, Wnd.MouseX, Wnd.MouseY, Pressed);
+			if (Key == Key.MouseRight)
+				NuklearDev.OnMouseButton(NuklearEvent.MouseButton.Right, Wnd.MouseX, Wnd.MouseY, Pressed);
+			if (Key == Key.MouseMiddle)
+				NuklearDev.OnMouseButton(NuklearEvent.MouseButton.Middle, Wnd.MouseX, Wnd.MouseY, Pressed);*/
+
 			if (Key == Key.M && Pressed) {
 				Camera Cam = Shader_DrawRayCast.Uniforms.Camera;
 
